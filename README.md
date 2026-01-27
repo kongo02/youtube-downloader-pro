@@ -23,3 +23,22 @@ A modern, feature-rich desktop application to download YouTube videos with real-
 - **🔧 Extensible** - Easy to modify and extend
 
 ## 🏗️ Architecture
+youtube-downloader-pro/
+├── backend/ # FastAPI server with WebSocket
+├── desktop/ # Tkinter desktop application
+├── electron/ # Electron desktop application
+└── installer/ # Windows installer configuration
+
+text
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.8+
+- Node.js 18+ (for Electron)
+- FFmpeg (optional, for format conversion)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/youtube-downloader-pro.git
+cd youtube-downloader-pro
