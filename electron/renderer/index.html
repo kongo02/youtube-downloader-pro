@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .progress {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 YouTube Downloader</h1>
+        
+        <div class="form-group">
+            <label>YouTube URL:</label>
+            <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        
+        <div class="form-group">
+            <label>Filename:</label>
+            <input type="text" id="filename" placeholder="my_video">
+        </div>
+        
+        <button id="downloadBtn">Download</button>
+        
+        <div class="progress" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div class="status">
+                <span id="progressText">0%</span>
+                <span id="speedText" style="float: right">Speed: N/A</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlInput = document.getElementById('url');
+        const filenameInput = document.getElementById('filename');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const speedText = document.getElementById('speedText');
+        
+        let ws = null;
+        
+        // Connect to WebSocket
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8000/ws');
+            
+            ws.onopen = () => {
+                console.log('Connected to backend');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                updateProgress(data);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from backend');
+                // Try to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+        
+        // Update progress display
+        function updateProgress(data) {
+            if (data.type === 'progress') {
+                progressSection.style.display = 'block';
+                const percent = parseFloat(data.percent) || 0;
+                progressBar.style.width = `${percent}%`;
+                progressText.textContent = data.percent;
+                speedText.textContent = `Speed: ${data.speed}`;
+            } else if (data.type === 'completed') {
+                alert('Download completed!');
+                resetUI();
+            } else if (data.type === 'error') {
+                alert(`Error: ${data.message}`);
+                resetUI();
+            }
+        }
+        
+        // Reset UI
+        function resetUI() {
+            progressSection.style.display = 'none';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Download';
+        }
+        
+        // Start download
+        async function startDownload() {
+            const url = urlInput.value.trim();
+            const filename = filenameInput.value.trim();
+            
+            if (!url || !filename) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Downloading...';
+            
+            try {
+                const response = await fetch(`http://localhost:8000/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start download');
+                }
+                
+                console.log('Download started');
+                
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                resetUI();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Connect WebSocket
+            connectWebSocket();
+            
+            // Setup button click
+            downloadBtn.addEventListener('click', startDownload);
+            
+            // Allow Enter key
+            [urlInput, filenameInput].forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') startDownload();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
