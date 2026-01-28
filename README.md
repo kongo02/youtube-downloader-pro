@@ -36,7 +36,8 @@ text
 ### Prerequisites
 - Python 3.8+
 - Node.js 18+ (for Electron)
-- FFmpeg (optional, for format conversion)
+- FFmpeg (for format conversion)
+- ## 📦 Installing FFmpeg (Required for Video Processing)
 
 ### 1. Clone the Repository
 ```bash
